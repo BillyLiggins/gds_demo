@@ -9,7 +9,7 @@ from folium.plugins import HeatMap
 from datetime import datetime
 import time
 import pickle
-# from data_methods import get_casualties_dataset
+from gds.demo.data.data_methods import find_ward_name_loc_mapping
 
 
 # @st.cache

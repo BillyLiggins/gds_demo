@@ -56,3 +56,27 @@ def gen_fake_possion_data():
 
     df = pd.DataFrame(data={"reference": ref, "date": date, "day": day, "time": time})
     return df
+
+
+@singleton
+def find_ward_name_loc_mapping():
+    accidents_data = get_casualties_dataset()
+    accidents_data.dropna(inplace=True)
+
+    fields = {
+        "longitude": "float64",
+        "latitude": "float64",
+        "ward_name": "category",
+    }
+    accidents_data = accidents_data[fields.keys()]
+    accidents_data = accidents_data.astype(fields)
+
+    ward_name_loc_mapping = (
+        accidents_data.groupby("ward_name")[["latitude", "longitude"]]
+        .aggregate("mean")
+        .reset_index()
+    )
+    print(ward_name_loc_mapping)
+    print(ward_name_loc_mapping.shape)
+
+    return ward_name_loc_mapping
