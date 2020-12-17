@@ -144,7 +144,7 @@ def main():
 
     st.title("Lists!")
     boros = gpd.read_file(
-        "../GDS_analysis/dataset/statistical-gis-boundaries-london/ESRI/London_Ward.shp"
+        "./dataset/statistical-gis-boundaries-london/ESRI/London_Ward.shp"
     )
 
     st.text(datetime.now())
