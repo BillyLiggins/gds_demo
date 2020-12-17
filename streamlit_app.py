@@ -1,4 +1,4 @@
-from gds.demo.streamlit.streamlit import main
+from gds.demo.streamlit_app.streamlit_app import main
 
 main()
 
