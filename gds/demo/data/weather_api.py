@@ -100,8 +100,6 @@ def find_ward_name_loc_mapping():
         .aggregate("mean")
         .reset_index()
     )
-    print(ward_name_loc_mapping)
-    print(ward_name_loc_mapping.shape)
     ward_name_loc_mapping = ward_name_loc_mapping.set_index("ward_name")
     return ward_name_loc_mapping
 
