@@ -1,5 +1,4 @@
 import streamlit as st
-# import streamlit.components.v1 as components
 import numpy as np
 import pandas as pd
 from streamlit_folium import folium_static
@@ -10,92 +9,7 @@ from datetime import datetime
 import time
 import pickle
 from gds.demo.data.data_methods import find_ward_name_loc_mapping
-
-
-# @st.cache
-# def find_ward_name_loc_mapping():
-#     accidents_data = get_casualties_dataset()
-#     accidents_data.dropna(inplace=True)
-#
-#     fields = {
-#         "longitude": "float64",
-#         "latitude": "float64",
-#         "ward_name": "category",
-#     }
-#     accidents_data = accidents_data[fields.keys()]
-#     accidents_data = accidents_data.astype(fields)
-#
-#     ward_name_loc_mapping = (
-#         accidents_data.groupby("ward_name")[["latitude", "longitude"]]
-#         .aggregate("mean")
-#         .reset_index()
-#     )
-#     print(ward_name_loc_mapping)
-#     print(ward_name_loc_mapping.shape)
-#
-#     return ward_name_loc_mapping
-#
-#
-# ward_locations = find_ward_name_loc_mapping()
-
-
-open_wheather_id_cat_mapping = {
-    "200": "8 Other",
-    "201": "8 Other",
-    "202": "8 Other",
-    "210": "8 Other",
-    "211": "8 Other",
-    "212": "8 Other",
-    "221": "8 Other",
-    "230": "8 Other",
-    "231": "8 Other",
-    "232": "8 Other",
-    "300": "2 Raining",
-    "301": "2 Raining",
-    "302": "2 Raining",
-    "310": "2 Raining",
-    "311": "2 Raining",
-    "312": "2 Raining",
-    "313": "2 Raining",
-    "314": "2 Raining",
-    "321": "2 Raining",
-    "500": "2 Raining",
-    "501": "2 Raining",
-    "502": "2 Raining",
-    "503": "2 Raining",
-    "504": "2 Raining",
-    "511": "2 Raining",
-    "520": "2 Raining",
-    "521": "2 Raining",
-    "522": "2 Raining",
-    "531": "2 Raining",
-    "600": "3 Snowing",
-    "601": "3 Snowing",
-    "602": "3 Snowing",
-    "611": "3 Snowing",
-    "612": "3 Snowing",
-    "613": "3 Snowing",
-    "615": "3 Snowing",
-    "616": "3 Snowing",
-    "620": "3 Snowing",
-    "621": "3 Snowing",
-    "622": "3 Snowing",
-    "701": "7 Fog/Mist",
-    "711": "8 Other",
-    "721": "8 Other",
-    "731": "8 Other",
-    "741": "7 Fog/Mist",
-    "751": "8 Other",
-    "761": "8 Other",
-    "762": "8 Other",
-    "771": "8 Other",
-    "781": "8 Other",
-    "800": "1 Fine",
-    "801": "8 Other",
-    "802": "8 Other",
-    "803": "8 Other",
-    "804": "8 Other",
-}
+from gds.demo.model.evaluate import evaluate_model
 
 
 # def get_current_whether():
@@ -153,22 +67,34 @@ def main():
 
     boros = boros[boros.BOROUGH == "Camden"]
     fake_data = boros[["NAME"]]
+    fake_data_2 = boros[["NAME"]]
+    output = evaluate_model("./trained_models/balanced_data_random_tree.pkl")
+    # output[
+    print(output)
+    fake_data = pd.merge(fake_data, output, left_on="NAME", right_index=True)
+    fake_data.data += 1
+    fake_data["data"] = fake_data.apply(lambda x: x["data"] + 1, axis=1)
+    print("fake_data")
+    print(fake_data)
 
     update_time = None
-    fake_data["data"] = np.random.choice([1, 2, 3], fake_data.shape[0])
+    # fake_data_2["data"] = np.random.choice([1, 2, 3], fake_data_2.shape[0])
+    # print("fake_data_2")
+    # print(fake_data_2)
 
-    datatyp = st.sidebar.radio("Data", ["live", "fake"])
+    # datatyp = st.sidebar.radio("Data", ["live", "fake"])
 
-    if datatyp == "fake":
-        update_time = datetime.now()
-        fake_data["data"] = np.random.choice([1, 2, 3], fake_data.shape[0])
+    # if datatyp == "fake":
+    #     update_time = datetime.now()
+    #     fake_data["data"] = np.random.choice([1, 2, 3], fake_data.shape[0])
+    #
+    # if st.sidebar.button("regen date"):
+    #     update_time = datetime.now()
+    #     fake_data["data"] = np.random.choice([1, 2, 3], fake_data.shape[0])
+    #
+    # if update_time:
+    #     st.text(f"Last updated : {update_time}")
 
-    if st.sidebar.button("regen date"):
-        update_time = datetime.now()
-        fake_data["data"] = np.random.choice([1, 2, 3], fake_data.shape[0])
-
-    if update_time:
-        st.text(f"Last updated : {update_time}")
     folium.Choropleth(
         geo_data=boros,
         name="choropleth",
@@ -188,6 +114,7 @@ def main():
     folium.LayerControl().add_to(traffic_map)
 
     folium_static(traffic_map, width=1000, height=700)
+    #
 
 
 if __name__ == "__main__":

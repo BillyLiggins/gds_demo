@@ -113,7 +113,7 @@ six==1.15.0
 sklearn==0.0
 smmap==3.0.4
 sodapy==2.1.0
-# streamlit==0.72.0
+streamlit==0.72.0
 streamlit-folium==0.1.0
 terminado==0.9.1
 testpath==0.4.4

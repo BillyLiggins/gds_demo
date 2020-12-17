@@ -80,3 +80,16 @@ def find_ward_name_loc_mapping():
     print(ward_name_loc_mapping.shape)
 
     return ward_name_loc_mapping
+
+
+reduce_weather_categories = {
+    "1 Fine": "1 Fine",  # 800
+    "2 Raining": "2 Raining",  # 5** 3**
+    "3 Snowing": "3 Snowing",  # 6**
+    "4 Fine/High Winds": "1 Fine",  # 741
+    "5 Raining/High Winds": "2 Raining",  # 2**
+    "6 Snowing/High Winds": "3 Snowing",
+    "7 Fog/Mist": "7 Fog/Mist",  # 701
+    "8 Other": "8 Other",  # & 7**
+    "9 Unknown": "9 Unknown",
+}
