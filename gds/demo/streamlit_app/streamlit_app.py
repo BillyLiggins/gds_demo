@@ -41,7 +41,7 @@ def main():
     # _max_height_()
 
     model_file = st.sidebar.selectbox(
-        "mode select", ["Two category, balance data", "Two category, all data", ]
+        "Model select", ["Two category, balance data", "Two category, all data", ]
     )
 
     model_mapping = {
