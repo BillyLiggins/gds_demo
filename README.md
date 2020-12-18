@@ -1,4 +1,14 @@
-# GDS demo
+# Data Scientist technical exercise
+## Billy Liggins
+
+### Overview
+This repository contains all the   a number of data analyses, models[ 
+
+
+todo
+
+
+
 
 todo
 

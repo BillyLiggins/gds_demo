@@ -1,10 +1,5 @@
-from sodapy import Socrata
-from dateutil.relativedelta import relativedelta
 import pandas as pd
-import numpy as np
 from gds.demo.utils import singleton
-import random
-from datetime import datetime
 import os
 
 import requests
