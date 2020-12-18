@@ -77,10 +77,11 @@ def evaluate(results):
             ax[j].plot([-1.0, 4.5], [0.5, 0.5], "k--")
 
     fig.tight_layout()
-    fig.savefig("Model_Evaluation_Result.png")
+    fig.savefig("plots/Model_Evaluation_Result.png")
 
 
 def feature_plot(importances, X_train):
+    "Plot the top 20 features in the model and their cumulative sum"
     fig, ax = plt.subplots()
 
     indices = np.argsort(importances)[::-1]
@@ -94,10 +95,42 @@ def feature_plot(importances, X_train):
     ax.set_xticklabels(columns, rotation=45, ha="right")
 
     fig.tight_layout()
-    fig.savefig("Model_Feature_Importances.png")
+    fig.savefig("plots/Model_Feature_Importances.png")
 
 
-def main():
+def group_severity(row):
+    if row["casualty_severity"] in ["1 Fatal", "2 Serious"]:
+        return 1
+    else:
+        return 0
+
+
+def data_two_category_all_data(data):
+    """slice data such that on two severity categories exist, use all of the data"""
+    data["casualty_severity"] = data.apply(lambda x: group_severity(x), axis=1)
+    severity_raw = data["casualty_severity"]
+    features_raw = data.drop("casualty_severity", axis=1)
+    data_manip_identifer = "two_category_all_data"
+    return severity_raw, features_raw, data_manip_identifer
+
+
+def data_two_category_balanced_data(data):
+    """ Slice data such that on two severity categories exist, balance the data """
+    data["casualty_severity"] = data.apply(lambda x: group_severity(x), axis=1)
+
+    df_fatal = data[data.casualty_severity == 1]
+    n_fatal = df_fatal.shape[0]
+    df_slight = data[data.casualty_severity == 0].sample(n=n_fatal)
+    data = pd.concat([df_slight, df_fatal])
+    data = data.sample(frac=1)
+
+    severity_raw = data["casualty_severity"]
+    features_raw = data.drop("casualty_severity", axis=1)
+    data_manip_identifer = "two_category_balanced_data"
+    return severity_raw, features_raw, data_manip_identifer
+
+
+def train_supervised_model():
     accidents_data = get_casualties_dataset()
     accidents_data.dropna(inplace=True)
     data = accidents_data.copy()
@@ -123,92 +156,13 @@ def main():
 
     data.weather = data.weather.map(reduce_weather_categories)
 
-    def group_severity(row):
-        if row["casualty_severity"] in ["1 Fatal", "2 Serious"]:
-            return 1
-        else:
-            return 0
+    # Pick the data you want to train on
+    # severity_raw, features_raw, data_manip_identifer = data_two_category_all_data(data)
+    severity_raw, features_raw, data_manip_identifer = data_two_category_balanced_data(
+        data
+    )
 
-    # ------------------------------------------------
-    # # # option 0 use raw data
-    # data = data
-    # severity_raw = data["casualty_severity"]
-    # features_raw = data.drop("casualty_severity", axis=1)
-    # data_manip_identifer = "three_category_all_data"
-
-    # ------------------------------------------------
-    # # option 1 balance the data
-    # df_fatal = data[data.casualty_severity == "1 Fatal"].copy()
-    # n_fatal = df_fatal.shape[0]
-    # df_serious = data[data.casualty_severity == "2 Serious"].sample(n=n_fatal)
-    # df_slight = data[data.casualty_severity == "3 Slight"].sample(n=n_fatal)
-    #
-    # print(df_fatal.shape)
-    # print(df_slight.shape)
-    # print(df_serious.shape)
-    # data = pd.concat([df_serious, df_slight, df_fatal])
-    # data = data.sample(frac=1)
-    # severity_raw = data["casualty_severity"]
-    # features_raw = data.drop("casualty_severity", axis=1)
-    # data_manip_identifer = "three_category_balanced_data"
-
-    # ------------------------------------------------
-    # # option 2 two cat data balance the data
-    #
-    # data["casualty_severity"] = data.apply(lambda x: group_severity(x), axis=1)
-    # severity_raw = data["casualty_severity"]
-    # features_raw = data.drop("casualty_severity", axis=1)
-    # data_manip_identifer = "two_category_all_data"
-
-    def data_two_category_all_data(data):
-        data["casualty_severity"] = data.apply(lambda x: group_severity(x), axis=1)
-        severity_raw = data["casualty_severity"]
-        features_raw = data.drop("casualty_severity", axis=1)
-        data_manip_identifer = "two_category_all_data"
-        return severity_raw, features_raw, data_manip_identifer
-
-    severity_raw, features_raw, data_manip_identifer = data_two_category_all_data(data)
-
-    # ------------------------------------------------
-    # option 3 two cat data balance the data
-    # data["casualty_severity"] = data.apply(lambda x: group_severity(x), axis=1)
-    #
-    # df_fatal = data[data.casualty_severity == 1].copy()
-    # n_fatal = df_fatal.shape[0]
-    # df_slight = data[data.casualty_severity == 0].sample(n=n_fatal)
-    # data = pd.concat([df_slight, df_fatal])
-    # data = data.sample(frac=1)
-    #
-    # severity_raw = data["casualty_severity"]
-    # features_raw = data.drop("casualty_severity", axis=1)
-    # data_manip_identifer = "two_category_balanced_data"
-
-    def data_two_category_balanced_data(data):
-        data["casualty_severity"] = data.apply(lambda x: group_severity(x), axis=1)
-
-        df_fatal = data[data.casualty_severity == 1].copy()
-        n_fatal = df_fatal.shape[0]
-        df_slight = data[data.casualty_severity == 0].sample(n=n_fatal)
-        data = pd.concat([df_slight, df_fatal])
-        data = data.sample(frac=1)
-
-        severity_raw = data["casualty_severity"]
-        features_raw = data.drop("casualty_severity", axis=1)
-        data_manip_identifer = "two_category_balanced_data"
-        return severity_raw, features_raw, data_manip_identifer
-
-    severity_raw, features_raw, data_manip_identifer = data_two_category_balanced_data(data)
-
-    # # -----------------------------------------------
-
-    print(pd.get_dummies(features_raw))
-    print(pd.get_dummies(features_raw).keys())
-    print(features_raw.ward_name.unique())
-    print(len(pd.get_dummies(features_raw).keys()))
-
-    print(severity_raw.value_counts())
     filted_data = pd.get_dummies(features_raw).astype(np.float64)
-    print(f"Number of features in the model {filted_data.shape[1]}")
 
     X_train, X_test, y_train, y_test = train_test_split(
         filted_data, severity_raw, test_size=0.2, random_state=0,
@@ -269,11 +223,13 @@ def main():
 
     feature_plot(best_clf.feature_importances_, X_train)
 
-    # Plot
-    os.makedirs("trained_models/", exist_ok=True)
-    pickle.dump(best_clf, open(f"trained_models/{data_manip_identifer}_random_tree.pkl", "wb"))
+    pickle.dump(
+        best_clf, open(f"trained_models/{data_manip_identifer}_random_tree.pkl", "wb")
+    )
     return
 
 
 if __name__ == "__main__":
-    main()
+    os.makedirs("trained_models/", exist_ok=True)
+    os.makedirs("plots/", exist_ok=True)
+    train_supervised_model()
