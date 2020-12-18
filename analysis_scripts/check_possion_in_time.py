@@ -1,30 +1,20 @@
 import os
 from scipy.special import factorial
 from scipy.optimize import curve_fit
-import geopandas as gpd
-from folium.plugins import HeatMap
-import folium
-from pprint import pprint
 import numpy as np
 import pandas as pd
-from descartes import PolygonPatch
 import matplotlib.pyplot as plt
 import seaborn as sns
-from geopy import distance
-import pickle
-from tqdm import tqdm
-from shapely.geometry import shape
 
-from gds.demo.lighting_utils.lamp_grid_lookup import LampGridLookup
 from gds.demo.data.data_methods import (
-    get_ward_dataset,
-    get_lighting_dataset,
     get_casualties_dataset,
     gen_fake_possion_data,
 )
 
 
 plt.style.use("./mplstyles/custom_style.mplstyle")
+
+# plt.style.use("ggplot")
 
 DAY_MAPPING = {
     "Monday": 0,
@@ -222,7 +212,13 @@ def slice_by_day_and_year(df):
         ax.cla()
         plt.clf()
         heat_map_date = heat_map_date.append(
-            {"year": year, "day": day, "chisq": chisq, "lambda": parameters[1], "lambda_err": cov_matrix[1][1]},
+            {
+                "year": year,
+                "day": day,
+                "chisq": chisq,
+                "lambda": parameters[1],
+                "lambda_err": cov_matrix[1][1],
+            },
             ignore_index=True,
         )
     plotting_grid = (
@@ -233,7 +229,9 @@ def slice_by_day_and_year(df):
     plotting_grid.index = plotting_grid.index.astype(int)
 
     plotting_grid_err = (
-        heat_map_date[["year", "day", "lambda_err"]].set_index(["year", "day"]).unstack()
+        heat_map_date[["year", "day", "lambda_err"]]
+        .set_index(["year", "day"])
+        .unstack()
     )
 
     # plotting_grid_err.columns = [f"{DAY_MAPPING_INV[j]}" for i, j in plotting_grid.columns]
@@ -305,71 +303,6 @@ def get_clean_time_data(fake_date: bool = False):
     return df
 
 
-def get_time_data():
-
-    df = get_casualties_dataset()
-
-    fields = {
-        "reference": "string",
-        "date": "string",
-        "casualty_severity": "string",
-    }
-    df = df[fields.keys()]
-    df = df.dropna()
-    df = df.astype(fields)
-    # As we are only interesting in single accidents not the number of causalities
-    # print(f"before duplicated drop : {df.shape}")
-    df = df.drop_duplicates()
-    # print(f"after duplicated drop : {df.shape}")
-
-    df["datetime"] = pd.to_datetime(df.date, format="%Y-%m-%dT%H:%M:%S")
-    df["date"] = pd.DatetimeIndex(df.datetime).date
-    df["day"] = pd.DatetimeIndex(df.datetime).strftime("%A")
-    df["year"] = pd.DatetimeIndex(df.datetime).year.astype(int)
-    df["hour"] = pd.DatetimeIndex(df.datetime).hour
-    df["month"] = pd.DatetimeIndex(df.date).month
-    df["month_number"] = df.apply(lambda x: f"{x.month}{x.year}", axis=1)
-    month_number_mapping = {k: v for v, k in enumerate(df.month_number.unique())}
-    month_number_mapping_inv = {v: k for k, v in month_number_mapping.items()}
-    df["month_number"] = df.month_number.map(month_number_mapping)
-
-    df["day_number"] = df.day.map(DAY_MAPPING)
-
-    date_number_mapping = {k: v for v, k in enumerate(sorted(df.date.unique()))}
-    date_number_mapping_inv = {v: k for k, v in date_number_mapping.items()}
-    df["date_number"] = df.date.map(date_number_mapping)
-
-    # df = df.set_index("reference")
-
-    return df
-
-
-# def plot_accidents_over_time():
-#     df = get_time_data()
-#     print(df)
-#     # return
-#     df["month_count"] = df.month
-#     accidents_data_month_fatal = df[df.casualty_severity == '1 Fatal'].groupby('date')[['month_number']].count()
-#     print(accidents_data_month_fatal)
-#     # accidents_data_month_fatal = accidents_data_month_fatal.set_index('date')
-#     accidents_data_month_fatal.index = pd.to_datetime(accidents_data_month_fatal.index)
-#
-#     print("_" * 80)
-#     print(accidents_data_month_fatal)
-#     print(accidents_data_month_fatal.index)
-#     accidents_data_month_fatal = accidents_data_month_fatal.index.resample('MS').sum()
-#     #
-#     accidents_data_month_serious = df[df.casualty_severity == '2 Serious'].groupby('date')['month'].count().reset_index()
-#     accidents_data_month_serious = accidents_data_month_serious.set_index('date')
-#     accidents_data_month_serious = accidents_data_month_serious['month'].resample('MS').sum()
-#     #
-#     accidents_data_month_slight = df[df.Accident_Severity == '3 Slight'].groupby('date')['month'].count().reset_index()
-#     accidents_data_month_slight = accidents_data_month_slight.set_index('date')
-#     accidents_data_month_slight = accidents_data_month_slight['month'].resample('MS').sum()
-#
-#     print(accidents_data_month_slight)
-
-
 def possion_in_time():
 
     df = get_clean_time_data()
@@ -392,59 +325,63 @@ def possion_in_time():
     # make_plotting_dirs()
     # fig.savefig("plots/mean_accidents_per_month.png")
 
-    fig, ax = plt.subplots(figsize=(15, 8))
-    counts, xedges, yedges, im = ax.hist2d(
-        df.hour, df.day_number + 0.5, bins=(24, 7), range=((0, 24), (0, 7))
-    )
-    ax.set_xlabel("Hour of day")
-    # ax.set_ylabel("Day")
-    ax.set_yticks(yedges[:-1] + 0.5)
-    ax.set_yticklabels(
-        labels=[
-            DAY_MAPPING_INV[ind] if ind in DAY_MAPPING_INV else "" for ind in yedges[:-1]
-        ],
-        ha="right",
-    )
-
-    plt.tight_layout()
-    cbar = fig.colorbar(im, ax=ax)
-    cbar.set_label("Number of accidents")
-    make_plotting_dirs()
-    fig.savefig("plots/accidents_per_day_hour_transpose.png")
-
-    fig, ax = plt.subplots(figsize=(15, 8))
-
-    dff = (
-        df.groupby(["day_number"])["date_number"]
-        .count()
-        .reset_index(name="counts")
-    )
-    dff = {row["day_number"]: row["counts"] for _, row in dff.iterrows()}
-    print(type(dff))
-    print(dff)
-    df["day_number_norm"] = df.apply(lambda row: 1.0 / float(dff[row["day_number"]]), axis=1)
-    # df["day_number_norm"] = df.apply(lambda row: 1.0 / row["day_number"], axis=1)
-    print(df)
-    counts, xedges, yedges, im = ax.hist2d(
-        df.hour, df.day_number + 0.5, weights=df.day_number_norm, bins=(24, 7), range=((0, 24), (0, 7))
-    )
-    ax.set_xlabel("Hour of day")
-    # ax.set_ylabel("Day")
-    ax.set_yticks(yedges[:-1] + 0.5)
-    ax.set_yticklabels(
-        labels=[
-            DAY_MAPPING_INV[ind] if ind in DAY_MAPPING_INV else "" for ind in yedges[:-1]
-        ],
-        ha="right",
-    )
-
-    plt.tight_layout()
-    cbar = fig.colorbar(im, ax=ax)
-    cbar.set_label("Probability of accidents normalised by day")
-    make_plotting_dirs()
-    fig.savefig("plots/accidents_per_day_hour_transpose_norm_by_day.png")
-
-    ax.cla()
+    # fig, ax = plt.subplots(figsize=(15, 8))
+    # counts, xedges, yedges, im = ax.hist2d(
+    #     df.hour, df.day_number + 0.5, bins=(24, 7), range=((0, 24), (0, 7))
+    # )
+    # ax.set_xlabel("Hour of day")
+    # # ax.set_ylabel("Day")
+    # ax.set_yticks(yedges[:-1] + 0.5)
+    # ax.set_yticklabels(
+    #     labels=[
+    #         DAY_MAPPING_INV[ind] if ind in DAY_MAPPING_INV else ""
+    #         for ind in yedges[:-1]
+    #     ],
+    #     ha="right",
+    # )
+    #
+    # plt.tight_layout()
+    # cbar = fig.colorbar(im, ax=ax)
+    # cbar.set_label("Number of accidents")
+    # make_plotting_dirs()
+    # fig.savefig("plots/accidents_per_day_hour_transpose.png")
+    #
+    # fig, ax = plt.subplots(figsize=(15, 8))
+    #
+    # dff = df.groupby(["day_number"])["date_number"].count().reset_index(name="counts")
+    # dff = {row["day_number"]: row["counts"] for _, row in dff.iterrows()}
+    # print(type(dff))
+    # print(dff)
+    # df["day_number_norm"] = df.apply(
+    #     lambda row: 1.0 / float(dff[row["day_number"]]), axis=1
+    # )
+    # # df["day_number_norm"] = df.apply(lambda row: 1.0 / row["day_number"], axis=1)
+    # print(df)
+    # counts, xedges, yedges, im = ax.hist2d(
+    #     df.hour,
+    #     df.day_number + 0.5,
+    #     weights=df.day_number_norm,
+    #     bins=(24, 7),
+    #     range=((0, 24), (0, 7)),
+    # )
+    # ax.set_xlabel("Hour of day")
+    # # ax.set_ylabel("Day")
+    # ax.set_yticks(yedges[:-1] + 0.5)
+    # ax.set_yticklabels(
+    #     labels=[
+    #         DAY_MAPPING_INV[ind] if ind in DAY_MAPPING_INV else ""
+    #         for ind in yedges[:-1]
+    #     ],
+    #     ha="right",
+    # )
+    #
+    # plt.tight_layout()
+    # cbar = fig.colorbar(im, ax=ax)
+    # cbar.set_label("Probability of accidents normalised by day")
+    # make_plotting_dirs()
+    # fig.savefig("plots/accidents_per_day_hour_transpose_norm_by_day.png")
+    #
+    # ax.cla()
 
     slice_by_day(df)
     slice_by_hour(df)
@@ -453,8 +390,4 @@ def possion_in_time():
 
 
 if __name__ == "__main__":
-    # main()
-    plot_accidents_over_time()
-    # print(get_clean_time_data())
-    # possion_in_time()
-    # lamp_posts(regenerate_data_cached_to_disk=False)
+    possion_in_time()
