@@ -1,26 +1,17 @@
 import os
 from scipy.special import factorial
-from scipy.optimize import curve_fit
-import geopandas as gpd
-from folium.plugins import HeatMap
 import folium
-from pprint import pprint
 import numpy as np
 import pandas as pd
-from descartes import PolygonPatch
 import matplotlib.pyplot as plt
-import seaborn as sns
 from geopy import distance
 import pickle
 from tqdm import tqdm
-from shapely.geometry import shape
 
 from gds.demo.lighting_utils.lamp_grid_lookup import LampGridLookup
 from gds.demo.data.data_methods import (
-    get_ward_dataset,
     get_lighting_dataset,
     get_casualties_dataset,
-    gen_fake_possion_data,
 )
 
 
@@ -35,10 +26,6 @@ def make_basic_lamp_plots(df_lamp_posts):
     fig, ax = plt.subplots(figsize=(10, 10))
     n_lamp_types = df_lamp_posts.lamp_type_number.unique()
     ax.hist(df_lamp_posts.lamp_type_number, range=(0, n_lamp_types), bins=n_lamp_types)
-
-    # ax.bar(df_lamp_posts.lamp_type, df_lamp_posts.lamp_type_number)  # range=(0, n_lamp_types), bins=n_lamp_types)
-    # g = sns.barplot(x="lamp_type", y="lamp_type_number", data=df_lamp_posts, ax=ax)
-    # ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha="right")
 
     ax.set_yscale("log")
     fig.tight_layout()
@@ -336,9 +323,40 @@ def lamp_posts(regenerate_data_cached_to_disk: bool = False):
     df["lamp_type_number_mode"] = df["lamp_type_number_mode"].astype(int)
 
     print("correlation between lighting and casualty severity:")
-    print(df.corr())
+    columns = [
+        "longitude",
+        "latitude",
+        "casualty_severity_number",
+        "hour",
+        "lamp_type_number_mode",
+        "wattage_mean",
+        "wattage_mode",
+        "n_lamps",
+    ]
+    df_corr = df[columns].corr()
+
     print("correlation between lamp_type and casualty severity:")
     print(df[["casualty_severity_number", "lamp_type_number_mode"]].corr())
+
+    fig, ax = plt.subplots(figsize=(20, 20))
+    cax = ax.imshow(df_corr, interpolation="none")
+    ax.set_xticks(range(len(columns)))
+    ax.set_xticklabels(columns, rotation=45, ha="right")
+    ax.set_yticks(range(len(columns)))
+    ax.set_yticklabels(columns, ha="right")
+    fig.colorbar(cax)
+    # cb.ax.tick_params(labelsize=14)
+    # plt.title("Correlation Matrix", fontsize=16)
+    box = ax.get_position()
+    ax.set_position(
+        [
+            box.x0 + box.width * 0.2,
+            box.y0 + 0.2 * box.height,
+            box.width * 0.8,
+            box.height * 0.8,
+        ]
+    )
+    fig.savefig("plots/corr.png")
 
     plot_collected_lighting_info(df, distance_cut_off)
 

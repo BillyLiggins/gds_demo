@@ -111,7 +111,7 @@ def plot_collected_accidents():
 
 
 def plot_accidents_over_time():
-    plt.style.use("ggplot")
+    plt.style.use("./mplstyles/custom_style.mplstyle")
     register_matplotlib_converters()
     df = get_time_data()
 
@@ -196,24 +196,30 @@ def plot_accidents_over_time():
         label="Slight",
     )
 
+    ax.set_ylabel("Number of accidents per month")
     box = ax.get_position()
     ax.set_position([box.x0, box.y0, box.width * 0.9, box.height])
     ax.legend(loc="center left", bbox_to_anchor=(1, 0.5))
     fig.savefig("plots/accidents_rate_over_time.png")
 
+    plt.style.use("ggplot")
     result = seasonal_decompose(accidents_data_month_total)
     fig = result.plot()
     fig.savefig("plots/seasonal_decompose_total.png")
 
+    fig, ax = plt.subplots(figsize=(14, 8))
     # run a facebook like forecast
     model = Prophet()
     train_df = pd.DataFrame()
     train_df["y"] = accidents_data_month_total
     train_df["ds"] = accidents_data_month_total.index
     model.fit(train_df)
-    future = model.make_future_dataframe(5, freq='M', include_history=True)
+    future = model.make_future_dataframe(10, freq='M', include_history=True)
     forecast = model.predict(future)
-    model.plot(forecast).savefig('plots/5_month_projection_total.png')
+    model.plot(forecast, ax=ax)
+    ax.set_ylabel("Total number of accidents per month")
+    ax.set_xlabel("Year")
+    fig.savefig('plots/10_month_projection_total.png')
 
 
 if __name__ == "__main__":
