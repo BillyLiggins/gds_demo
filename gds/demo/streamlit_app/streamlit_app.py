@@ -35,15 +35,20 @@ def _max_height_():
     )
 
 
-def style_function(x):
-    return {"fillColor": None, "color": "blue", "weight": 2, "fillOpacity": 0.0}
-
-
 def main():
     """"""
     # _max_width_()
     # _max_height_()
 
+    model_file = st.sidebar.selectbox(
+        "mode select", ["Two category, balance data", "Two category, all data", ]
+    )
+
+    model_mapping = {
+        "Two category, all data": "./trained_models/two_category_all_data_random_tree.pkl",
+        "Two category, balance data": "./trained_models/two_category_balanced_data_random_tree.pkl",
+    }
+    model_file = model_mapping.get(model_file)
     st.title("Proof of concept : Camden accident severity prediction")
     boros = gpd.read_file(
         "./dataset/statistical-gis-boundaries-london/ESRI/London_Ward.shp"
@@ -57,8 +62,7 @@ def main():
 
     st.text(f"Last updated : {datetime.now()}",)
 
-    # Take ward names
-    model_output = evaluate_model("./trained_models/balanced_data_random_tree.pkl")
+    model_output = evaluate_model(model_file)
     data = boros[["NAME"]]
     data = pd.merge(data, model_output, left_on="NAME", right_index=True)
 
@@ -75,8 +79,6 @@ def main():
         bins=[0, 1, 2, 3],
         legend_name="Predicted result of accident",
     ).add_to(m)
-
-    # folium.LayerControl().add_to(traffic_map)
 
     folium_static(m, width=1000, height=700)
 
