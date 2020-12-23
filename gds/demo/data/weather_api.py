@@ -79,23 +79,53 @@ open_wheather_id_cat_mapping = {
 
 @singleton
 def find_ward_name_loc_mapping():
-    accidents_data = get_casualties_dataset()
-    accidents_data.dropna(inplace=True)
+    # accidents_data = get_casualties_dataset()
+    # accidents_data.dropna(inplace=True)
+    #
+    # fields = {
+    #     "longitude": "float64",
+    #     "latitude": "float64",
+    #     "ward_name": "category",
+    # }
+    # print(accidents_data.keys())  # ["ward_name"].uquine())
+    # accidents_data = accidents_data[fields.keys()]
+    # accidents_data = accidents_data.astype(fields)
+    #
+    # ward_name_loc_mapping = (
+    #     accidents_data.groupby("ward_name")[["latitude", "longitude"]]
+    #     .aggregate("mean")
+    #     .reset_index()
+    # )
+    # ward_name_loc_mapping = ward_name_loc_mapping.set_index("ward_name")
 
-    fields = {
-        "longitude": "float64",
-        "latitude": "float64",
-        "ward_name": "category",
+    # Data api changed, this hard coding allows the app to run
+    ward_name_loc_mapping = {
+        "Belsize": {"latitude": 51.550187, "longitude": -0.166274},
+        "Bloomsbury": {"latitude": 51.521896, "longitude": -0.12796},
+        "Camden Town with Primrose Hill": {
+            "latitude": 51.541257,
+            "longitude": -0.153317,
+        },
+        "Cantelowes": {"latitude": 51.546972, "longitude": -0.133216},
+        "Fortune Green": {"latitude": 51.555394, "longitude": -0.196607},
+        "Frognal and Fitzjohns": {"latitude": 51.553596, "longitude": -0.181925},
+        "Gospel Oak": {"latitude": 51.555472, "longitude": -0.149841},
+        "Hampstead Town": {"latitude": 51.555672, "longitude": -0.176203},
+        "Haverstock": {"latitude": 51.547857, "longitude": -0.160506},
+        "Highgate": {"latitude": 51.571704, "longitude": -0.150124},
+        "Holborn and Covent Garden": {"latitude": 51.513031, "longitude": -0.124177},
+        "Kentish Town": {"latitude": 51.549095, "longitude": -0.144084},
+        "Kilburn": {"latitude": 51.540911, "longitude": -0.196743},
+        "King's Cross": {"latitude": 51.532001, "longitude": -0.123323},
+        "Regent's Park": {"latitude": 51.531271, "longitude": -0.156969},
+        "St Pancras and Somers Town": {"latitude": 51.53109, "longitude": -0.129785},
+        "Swiss Cottage": {"latitude": 51.543031, "longitude": -0.175708},
+        "West Hampstead": {"latitude": 51.547216, "longitude": -0.191102},
     }
-    accidents_data = accidents_data[fields.keys()]
-    accidents_data = accidents_data.astype(fields)
-
-    ward_name_loc_mapping = (
-        accidents_data.groupby("ward_name")[["latitude", "longitude"]]
-        .aggregate("mean")
-        .reset_index()
+    ward_name_loc_mapping = pd.DataFrame.from_dict(
+        ward_name_loc_mapping, orient="index"
     )
-    ward_name_loc_mapping = ward_name_loc_mapping.set_index("ward_name")
+
     return ward_name_loc_mapping
 
 
@@ -115,7 +145,9 @@ def get_open_weather_api_data():
         resp = requests.get(url=url, params=params)
         if resp.status_code == 200:
             resp = resp.json()
-            output[ward_name] = open_wheather_id_cat_mapping.get(resp["weather"][0]["id"])
+            output[ward_name] = open_wheather_id_cat_mapping.get(
+                resp["weather"][0]["id"]
+            )
 
-    output = pd.DataFrame.from_dict(output, columns=["weather"], orient='index')
+    output = pd.DataFrame.from_dict(output, columns=["weather"], orient="index")
     return output
